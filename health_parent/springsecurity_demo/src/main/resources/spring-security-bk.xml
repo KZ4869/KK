@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd">
+
+    <security:http pattern="/login.html" security="none"/>
+    <security:http pattern="/fail.html" security="none"/>
+    <!--config: 自动配置.自动生成login页面,login处理
+        expressions: 是否使用spell表达式 true: access 的值可以填表达式(hasRole, hasAuthority, hasAny....)
+                                      false: ROEL_角色名(必须是ROLE_打，否则启动报错), 或 security写死的几个常量
+    -->
+    <!--拦截规则 -->
+    <security:http auto-config="true" use-expressions="false">
+        <security:intercept-url pattern="/**" access="ROLE_ADMIN"/>
+        <!--   自定义登陆配置
+ login-page: 指定登陆页面
+ login-processing-url: 指定登陆处理的url
+ username-parameter: 登陆请求时，传递过来的 用户名参数名  request.getParameter("abc") 获取页面填写的用户名
+ password-parameter: 获取密码的参数名 request.getParameter("bcd") 获取页面填写的密码
+ default-target-url: 登陆成功后默认跳转的url
+ always-use-default-target: 为true时。不管是从哪个页面进入到登陆的，登陆成功后都跳转到 default-target-url
+ -->
+        <security:form-login
+                login-page="/login.html"
+                login-processing-url="/login.do"
+                username-parameter="abc"
+                password-parameter="bcd"
+                authentication-failure-url="/fail.html"
+                default-target-url="/index.html"
+                always-use-default-target="true"
+
+        />
+        <!--    关闭跨域访问限制 否则登录不了    -->
+        <security:csrf disabled="true"/>
+    </security:http>
+
+
+    <!--认证管理器-->
+    <security:authentication-manager>
+        <!--认证信息提供者 认证信息的来源
+            提供登陆用户信息  用户名、密码、权限集合
+            找容器中的user-service-ref: userService 这个对象来获取登陆用户信息
+            userService 必须实现UserDetailsService接口， 且要让这个实现类进入spring容器
+        -->
+        <security:authentication-provider user-service-ref="userService">
+            <security:password-encoder ref="encoder"/>
+            <!--用户登录信息由我们来提供-->
+            <!--<security:user-service>
+                &lt;!&ndash;security:user 硬编码 一个用户对象在内存中,就不需要查询数据库了
+                    将来应该使用从数据库中查询
+                    name:登录的用户名 password 密码
+                    authorities 访问的权限(既可以是角色也可以是权限名) authorities与上面access一致才能访问
+                    {noop} 使用明文密码
+                &ndash;&gt;
+                <security:user name="admin" authorities="ROLE_ADMIN" password="{noop}admin"/>
+            </security:user-service>-->
+        </security:authentication-provider>
+
+
+    </security:authentication-manager>
+    <bean id="userService" class="com.kz.security.UserService"/>
+    <bean id="encoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"/>
+
+</beans>
